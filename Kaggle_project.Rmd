@@ -1,0 +1,31 @@
+---
+title: "Kaggle Project"
+author: "Bridget, Eva, and Annie"
+date: "November 18, 2017"
+output: pdf_document
+---
+```{r}
+# read in the data
+train_data=read.csv(file="/home/bridget/Dropbox/STATS202/kaggle/train.csv",header=T)
+test_data=read.csv(file="/home/bridget/Dropbox/STATS202/kaggle/test.csv",header=T)
+
+# check correlations
+cor(train_data)
+
+# change height and orientation variables to categorical variables
+train_data$Height=as.factor(train_data$Height)
+train_data$Orientation=as.factor(train_data$Orientation)
+
+# remove ID variable since it just labels the rows
+# remove relative compactness because it is linearly correlated with surface area
+# remove surface area because it is equal to wall area + 2 *(roof area)
+summary(lm(Surface.Area~Wall.Area+Roof.Area,data=train_data))
+
+names(train_data)
+train_data=train_data[,-c(1,2,3)]
+
+# linear regression on remaining data
+lm.fit=lm(Outcome~.,data=train_data)
+summary(lm.fit)
+```
+

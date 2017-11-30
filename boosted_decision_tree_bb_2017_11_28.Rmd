@@ -1,0 +1,118 @@
+---
+title: "Kaggle Project"
+author: "Bridget, Eva, and Annie"
+date: "November 28, 2017"
+output: pdf_document
+---
+
+```{r}
+# read in the data
+train_data=read.csv(file="/home/bridget/Dropbox/STATS202/kaggle/train.csv",header=T)
+test_data=read.csv(file="/home/bridget/Dropbox/STATS202/kaggle/test.csv",header=T)
+
+# remove ID
+names(train_data)
+train_data=train_data[,-1]
+
+# change orientation and glazing distribution to factors
+train_data$Orientation=as.factor(train_data$Orientation)
+train_data$Glazing.Distr=as.factor(train_data$Glazing.Distr)
+
+# boosted decision tree
+library(gbm)
+set.seed(1)
+train_sample=sample(1:nrow(train_data),0.7*nrow(train_data))
+mse=matrix(rep(NA,5*10),nrow=10,ncol=5)
+for (i in 1:10){
+  k=0
+  for (t in c(50,100,500,1000,5000)) {
+    k=k+1
+    boost=gbm(Outcome~.-Orientation,data=train_data[train_sample,],
+                       distribution="gaussian",n.trees=t,interaction.depth=i,shrinkage=0.1)
+    mse[i,k]=mean((predict(boost,newdata=train_data[-train_sample,],n.trees=t)
+                   -train_data[-train_sample,]$Outcome)^2)
+  }
+}
+mse
+which.min(mse)
+min(mse)
+# minimized the validation set error for lambda=0.1 at n.trees=1000 and interaction.depth=2
+
+# try a different random seed
+set.seed(3)
+train_sample=sample(1:nrow(train_data),0.7*nrow(train_data))
+mse=matrix(rep(NA,5*10),nrow=10,ncol=5)
+for (i in 1:10){
+  k=0
+  for (t in c(50,100,500,1000,5000)) {
+    k=k+1
+    boost=gbm(Outcome~.-Orientation,data=train_data[train_sample,],
+                       distribution="gaussian",n.trees=t,interaction.depth=i,shrinkage=0.1)
+    mse[i,k]=mean((predict(boost,newdata=train_data[-train_sample,],n.trees=t)
+                   -train_data[-train_sample,]$Outcome)^2)
+  }
+}
+mse
+which.min(mse)
+min(mse)
+# minimized the validation set error for lambda=0.1 at n.trees=1000 and interaction.depth=3
+
+# try a different random seed
+set.seed(5)
+train_sample=sample(1:nrow(train_data),0.7*nrow(train_data))
+mse=matrix(rep(NA,5*10),nrow=10,ncol=5)
+for (i in 1:10){
+  k=0
+  for (t in c(50,100,500,1000,5000)) {
+    k=k+1
+    boost=gbm(Outcome~.-Orientation,data=train_data[train_sample,],
+                       distribution="gaussian",n.trees=t,interaction.depth=i,shrinkage=0.1)
+    mse[i,k]=mean((predict(boost,newdata=train_data[-train_sample,],n.trees=t)
+                   -train_data[-train_sample,]$Outcome)^2)
+  }
+}
+mse
+which.min(mse)
+min(mse)
+# minimized the validation set error for lambda=0.1 at n.trees=1000 and interaction.depth=2
+
+# check lambda shrinkage values
+new_train_data=data.frame(train_data,train_data$Wall.Area*train_data$Roof.Area)
+set.seed(1)
+train_sample=sample(1:nrow(train_data),0.7*nrow(train_data))
+mse2=matrix(rep(NA,44*15),nrow=15,ncol=4)
+for (i in 1:15){
+  k=0
+  for (j in c(0.001,0.01,0.1,0.5)) {
+    k=k+1
+    boost=gbm(Outcome~.-Orientation,data=new_train_data[train_sample,],
+                       distribution="gaussian",n.trees=1000,interaction.depth=i,shrinkage=j)
+    mse2[i,k]=mean((predict(boost,newdata=new_train_data[-train_sample,],n.trees=1000)
+                    -new_train_data[-train_sample,]$Outcome)^2)
+  }
+}
+mse2
+which.min(mse2)
+min(mse2)
+# looks like validation set error is minimized for n.trees=1000 with 
+# interaction.depth=2 and shrinkage=0.1
+# let's try this model
+
+# fit to all training data and create test predictions
+train_data=read.csv(file="/home/bridget/Dropbox/STATS202/kaggle/train.csv",header=T)
+test_data=read.csv(file="/home/bridget/Dropbox/STATS202/kaggle/test.csv",header=T)
+set.seed(1)
+ID=test_data$ID
+test_data=test_data[,-1]
+test_data$Orientation=as.factor(test_data$Orientation)
+test_data$Glazing.Distr=as.factor(test_data$Glazing.Distr)
+train_data=train_data[,-1]
+train_data$Orientation=as.factor(train_data$Orientation)
+train_data$Glazing.Distr=as.factor(train_data$Glazing.Distr)
+boost=gbm(Outcome~.-Orientation,data=train_data,
+                       distribution="gaussian",n.trees=1000,interaction.depth=2,shrinkage=0.1)
+out=data.frame(ID,predict(boost,newdata=test_data,n.trees=1000))
+names(out)=c("ID","Outcome")
+write.csv(out, file = "test_boost_rand_forest_bb_2017_11_28.csv",row.names=FALSE)
+
+```
